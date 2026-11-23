@@ -181,37 +181,20 @@
   <!-- ORGANIZER -->
   <section id="editor">
     <div class="card">
-      <h2><span class="num">1</span>Свято</h2>
-      <div class="grid">
-        <label class="field full">Назва
-          <input type="text" id="fTitle" maxlength="80" placeholder="Таємний Санта 2027">
-        </label>
-        <label class="field">Бюджет подарунка
-          <input type="text" id="fBudget" maxlength="40" placeholder="напр. до 500 грн">
-        </label>
-        <label class="field">Дата обміну
-          <input type="date" id="fDate">
-        </label>
-        <label class="field full">Повідомлення для всіх (необов'язково)
-          <textarea id="fNote" maxlength="400" placeholder="Обмін подарунками 31 грудня у бабусі"></textarea>
-        </label>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2><span class="num">2</span>Учасники <span class="count" id="peopleCount"></span></h2>
+      <h2><span class="num">1</span>Учасники <span class="count" id="peopleCount"></span></h2>
       <p class="hint">Людей з однієї сім'ї система ніколи не поставить у пару, ні в один бік, ні в інший. Інші заборони додаються кнопкою «Обмеження».</p>
       <form class="add-row" id="addForm" autocomplete="off">
         <input type="text" id="addName" maxlength="40" placeholder="Ім'я" required>
         <input type="text" id="addGroup" maxlength="40" placeholder="Сім'я (необов'язково)" list="groupList">
         <button class="btn" type="submit">Додати</button>
       </form>
+      <button class="btn ghost small" type="button" id="presetBtn" style="margin-top:10px">Заповнити: наша компанія (6 осіб)</button>
       <datalist id="groupList"></datalist>
       <ul class="people" id="people"></ul>
     </div>
 
     <div class="card">
-      <h2><span class="num">3</span>Правила</h2>
+      <h2><span class="num">2</span>Правила</h2>
       <label class="switch">
         <input type="checkbox" id="optSym">
         <span><b>Обмеження діють в обидва боки</b><span>Якщо Олег не дарує Ірі, то й Іра не дарує Олегу.</span></span>
@@ -226,7 +209,7 @@
     <div class="error" id="drawError" hidden></div>
 
     <div class="card" id="results" hidden style="margin-top:18px">
-      <h2><span class="num">4</span>Посилання для учасників</h2>
+      <h2><span class="num">3</span>Посилання для учасників</h2>
       <div class="warn">
         <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" style="flex:none;margin-top:1px"><circle cx="10" cy="10" r="9" fill="#d8ad5b"/><rect x="9" y="5" width="2" height="7" rx="1" fill="#fff"/><circle cx="10" cy="14.5" r="1.2" fill="#fff"/></svg>
         <span>Надішли кожному його власне посилання особистим повідомленням. Не відкривай чужі посилання, бо побачиш, кому та людина дарує.</span>
@@ -429,7 +412,6 @@
     const box = $('#results');
     if (!state.results) { box.hidden = true; return; }
     box.hidden = false;
-    const ev = { t: state.title.trim(), b: state.budget.trim(), d: state.date, n: state.note.trim() };
     $('#links').innerHTML = state.results.pairs.map(([g, r], i) => {
       const giver = byId(g);
       return `<li>
@@ -441,26 +423,34 @@
     }).join('');
     box._link = i => {
       const [g, r] = state.results.pairs[i];
-      return baseUrl() + '#gift=' + encode({ v: 1, g: byId(g).name, r: byId(r).name, ...ev });
+      return baseUrl() + '#gift=' + encode({ v: 1, g: byId(g).name, r: byId(r).name });
     };
   }
 
   function messageFor(i) {
     const [g] = state.results.pairs[i];
     const link = $('#results')._link(i);
-    return { name: byId(g).name, link, text: `Привіт, ${byId(g).name}! Твоє особисте посилання на «${state.title.trim() || 'Таємного Санту'}». Нікому його не показуй:\n${link}` };
+    return { name: byId(g).name, link, text: `Привіт, ${byId(g).name}! Твоє особисте посилання на Таємного Санту. Нікому його не показуй:\n${link}` };
   }
 
   function renderEditor() {
-    $('#fTitle').value = state.title; $('#fBudget').value = state.budget;
-    $('#fDate').value = state.date; $('#fNote').value = state.note;
     $('#optSym').checked = state.symmetric; $('#optRecip').checked = state.noRecip;
     renderPeople(); renderResults();
   }
 
   /* ---------- events: organizer ---------- */
-  [['#fTitle','title'],['#fBudget','budget'],['#fDate','date'],['#fNote','note']].forEach(([sel, key]) => {
-    $(sel).addEventListener('input', e => { state[key] = e.target.value; save(); }); // links are rebuilt on copy, so no need to redraw
+  // Preset: three couples, each partner blocked for the other.
+  const PRESET = [['Євгеній', 'Марія'], ['Олександр', 'Світлана'], ['Віктор', 'Тетяна']];
+  $('#presetBtn').addEventListener('click', () => {
+    if (state.people.length && !confirm('Поточний список учасників буде замінено. Продовжити?')) return;
+    state.people = []; state.blocks = []; openId = null;
+    for (const [a, b] of PRESET) {
+      const pa = { id: uid(), name: a, group: '' }, pb = { id: uid(), name: b, group: '' };
+      state.people.push(pa, pb);
+      state.blocks.push([pa.id, pb.id], [pb.id, pa.id]);
+    }
+    invalidate(); save(); renderPeople();
+    toast('Учасників додано');
   });
   $('#optSym').addEventListener('change', e => { state.symmetric = e.target.checked; invalidate(); save(); renderPeople(); });
   $('#optRecip').addEventListener('change', e => { state.noRecip = e.target.checked; invalidate(); save(); });
