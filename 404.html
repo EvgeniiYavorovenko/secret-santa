@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Таємний Санта — тепер у Блокноті</title>
+<script>
+  // Forward this old link to the same page of the notebook, keeping invitations and gift links.
+  (function () {
+    var map = (q, h) => {
+      const gift = h.match(/^gift=([A-Za-z0-9_-]+)/);
+      return [new URLSearchParams(), gift ? 'santa/gift=' + gift[1] : 'santa'];
+    };
+    var r = map(new URLSearchParams(location.search), location.hash.replace(/^#/, ''));
+    var query = r[0].toString();
+    location.replace('https://zoshyt.klitynka-game.workers.dev/' + (query ? '?' + query : '') + '#/' + r[1]);
+  })();
+  // Take the old app off this phone: its service worker is replaced by one that removes itself.
+  if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function (list) {
+    list.forEach(function (reg) { reg.unregister(); });
+  });
+</script>
+<noscript><meta http-equiv="refresh" content="0; url=https://zoshyt.klitynka-game.workers.dev/"></noscript>
+<style>
+  body { font: 16px/24px system-ui, sans-serif; margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f6f1e7; color: #2b2520; }
+  a { color: #8a4b2a; }
+</style>
+</head>
+<body>
+<p>Таємний Санта тепер у <a href="https://zoshyt.klitynka-game.workers.dev/">Блокноті</a>.</p>
+</body>
+</html>
